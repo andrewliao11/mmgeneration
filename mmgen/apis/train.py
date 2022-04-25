@@ -180,7 +180,8 @@ def train_model(model,
             **cfg.data.get('val_data_loader', {})
         }
         val_dataloader = build_dataloader(
-            val_dataset, dist=distributed, **val_loader_cfg)
+            val_dataset, #dist=distributed, 
+            **val_loader_cfg)
         eval_cfg = deepcopy(cfg.get('evaluation'))
         priority = eval_cfg.pop('priority', 'LOW')
         eval_cfg.update(dict(dist=distributed, dataloader=val_dataloader))

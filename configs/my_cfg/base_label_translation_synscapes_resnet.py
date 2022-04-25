@@ -1,6 +1,8 @@
+import os.path as osp
+
 _base_ = [
     '../_base_/models/label_translation/label_translation_bbox_detr.py',
-    '../_base_/datasets/unpaired_synscapes_bboxes.py',
+    #'../_base_/datasets/unpaired_synscapes_bboxes.py',
     '../_base_/default_runtime.py'
 ]
 
@@ -44,87 +46,109 @@ model = dict(
     ])
 
 dataroot = None
-train_pipeline = [
+
+
+img_norm_cfg = dict(
+    mean=[123.675, 116.28, 103.53], std=[58.395, 57.12, 57.375], to_rgb=True)
+    
+
+#NOTE: Detection pipelines uses the pipelines in mmdet
+detection_train_pipeline = [
+    dict(type='LoadImageFromFile'),
+    dict(type='LoadAnnotations', with_bbox=True),
     dict(
-        type='LoadImageFromFile',
-        io_backend='disk',
-        key=f'img_{domain_a}',
-        flag='color'),
-    dict(
-        type='LoadImageFromFile',
-        io_backend='disk',
-        key=f'img_{domain_b}',
-        flag='color'),
-    dict(
-        type='Resize',
-        keys=[f'img_{domain_a}', f'img_{domain_b}'],
-        scale=(286, 286),
-        interpolation='bicubic'),
-    dict(
-        type='Crop',
-        keys=[f'img_{domain_a}', f'img_{domain_b}'],
-        crop_size=(256, 256),
-        random_crop=True),
-    dict(type='Flip', keys=[f'img_{domain_a}'], direction='horizontal'),
-    dict(type='Flip', keys=[f'img_{domain_b}'], direction='horizontal'),
-    dict(type='RescaleToZeroOne', keys=[f'img_{domain_a}', f'img_{domain_b}']),
-    dict(
-        type='Normalize',
-        keys=[f'img_{domain_a}', f'img_{domain_b}'],
-        to_rgb=False,
-        mean=[0.5, 0.5, 0.5],
-        std=[0.5, 0.5, 0.5]),
-    dict(type='ImageToTensor', keys=[f'img_{domain_a}', f'img_{domain_b}']),
-    dict(
-        type='Collect',
-        keys=[f'img_{domain_a}', f'img_{domain_b}'],
-        meta_keys=[f'img_{domain_a}_path', f'img_{domain_b}_path'])
+        type='Resize', img_scale=[(2048, 800), (2048, 1024)], keep_ratio=True),
+    dict(type='RandomFlip', flip_ratio=0.5),
+    dict(type='Normalize', **img_norm_cfg),
+    dict(type='Pad', size_divisor=32),
+    dict(type='DefaultFormatBundle'),
+    dict(type='Collect', keys=['img', 'gt_bboxes', 'gt_labels']),
 ]
-test_pipeline = [
+
+detection_test_pipeline = [
+    dict(type='LoadImageFromFile'),
     dict(
-        type='LoadImageFromFile',
-        io_backend='disk',
-        key=f'img_{domain_a}',
-        flag='color'),
-    dict(
-        type='LoadImageFromFile',
-        io_backend='disk',
-        key=f'img_{domain_b}',
-        flag='color'),
-    dict(
-        type='Resize',
-        keys=[f'img_{domain_a}', f'img_{domain_b}'],
-        scale=(256, 256),
-        interpolation='bicubic'),
-    dict(type='RescaleToZeroOne', keys=[f'img_{domain_a}', f'img_{domain_b}']),
-    dict(
-        type='Normalize',
-        keys=[f'img_{domain_a}', f'img_{domain_b}'],
-        to_rgb=False,
-        mean=[0.5, 0.5, 0.5],
-        std=[0.5, 0.5, 0.5]),
-    dict(type='ImageToTensor', keys=[f'img_{domain_a}', f'img_{domain_b}']),
-    dict(
-        type='Collect',
-        keys=[f'img_{domain_a}', f'img_{domain_b}'],
-        meta_keys=[f'img_{domain_a}_path', f'img_{domain_b}_path'])
+        type='MultiScaleFlipAug',
+        img_scale=(2048, 1024),
+        flip=False,
+        transforms=[
+            dict(type='Resize', keep_ratio=True),
+            dict(type='RandomFlip'),
+            dict(type='Normalize', **img_norm_cfg),
+            dict(type='Pad', size_divisor=32),
+            dict(type='ImageToTensor', keys=['img']),
+            dict(type='Collect', keys=['img']),
+        ])
 ]
-data = dict(
+
+
+domain_a_datasets = dict(
     train=dict(
-        dataroot=dataroot,
-        pipeline=train_pipeline,
-        domain_a=domain_a,
-        domain_b=domain_b),
+        type='DetectionCityscapesDataset', 
+        ann_file=osp.join(dataroot, domain_a, 'train/annotations/bbox.json'), 
+        img_prefix=osp.join(dataroot, domain_a, 'train/rgb'), 
+        pipeline=detection_train_pipeline
+    ), 
     val=dict(
-        dataroot=dataroot,
-        domain_a=domain_a,
-        domain_b=domain_b,
-        pipeline=test_pipeline),
+        type='DetectionCityscapesDataset', 
+        ann_file=osp.join(dataroot, domain_a, 'val/annotations/bbox.json'), 
+        img_prefix=osp.join(dataroot, domain_a, 'val/rgb'), 
+        pipeline=detection_test_pipeline
+    ), 
     test=dict(
-        dataroot=dataroot,
-        domain_a=domain_a,
-        domain_b=domain_b,
-        pipeline=test_pipeline))
+        type='DetectionCityscapesDataset', 
+        ann_file=osp.join(dataroot, domain_a, 'test/annotations/bbox.json'), 
+        img_prefix=osp.join(dataroot, domain_a, 'test/rgb'), 
+        pipeline=detection_test_pipeline
+    )
+)
+
+
+domain_b_datasets = dict(
+    train=dict(
+        type='DetectionCityscapesDataset', 
+        ann_file=osp.join(dataroot, domain_b, 'train/annotations/bbox.json'), 
+        img_prefix=osp.join(dataroot, domain_b, 'train/rgb'), 
+        pipeline=detection_train_pipeline
+    ), 
+    val=dict(
+        type='DetectionCityscapesDataset', 
+        ann_file=osp.join(dataroot, domain_b, 'val/annotations/bbox.json'), 
+        img_prefix=osp.join(dataroot, domain_b, 'val/rgb'), 
+        pipeline=detection_test_pipeline
+    ), 
+    test=dict(
+        type='DetectionCityscapesDataset', 
+        ann_file=osp.join(dataroot, domain_b, 'test/annotations/bbox.json'), 
+        img_prefix=osp.join(dataroot, domain_b, 'test/rgb'), 
+        pipeline=detection_test_pipeline
+    )
+)
+
+
+
+
+data = dict(
+    samples_per_gpu=1, 
+    workers_per_gpu=2, 
+    train=dict(
+        type='DetectionUnpairedDataset', 
+        domain_a_dataset=domain_a_datasets['train'], 
+        domain_b_dataset=domain_b_datasets['train']
+    ), 
+    val=dict(
+        type='DetectionUnpairedDataset', 
+        domain_a_dataset=domain_a_datasets['val'], 
+        domain_b_dataset=domain_b_datasets['val']
+    ),
+    test=dict(
+        type='DetectionUnpairedDataset', 
+        domain_a_dataset=domain_a_datasets['test'], 
+        domain_b_dataset=domain_b_datasets['test']
+    )
+)
+
+
 
 optimizer = dict(
     generators=dict(type='Adam', lr=0.0002, betas=(0.5, 0.999)),
@@ -135,13 +159,7 @@ lr_config = dict(
     policy='Linear', by_epoch=False, target_lr=0, start=135000, interval=1350)
 
 checkpoint_config = dict(interval=10000, save_optimizer=True, by_epoch=False)
-custom_hooks = [
-    dict(
-        type='MMGenVisualizationHook',
-        output_dir='training_samples',
-        res_name_list=[f'fake_{domain_a}', f'fake_{domain_b}'],
-        interval=5000)
-]
+
 
 runner = None
 use_ddp_wrapper = True

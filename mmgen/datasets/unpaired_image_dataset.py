@@ -84,6 +84,7 @@ class UnpairedImageDataset(Dataset):
         img_a_path = self.data_infos_a[idx % self.len_a]['path']
         idx_b = np.random.randint(0, self.len_b)
         img_b_path = self.data_infos_b[idx_b]['path']
+
         results = dict()
         results[f'img_{self.domain_a}_path'] = img_a_path
         results[f'img_{self.domain_b}_path'] = img_b_path

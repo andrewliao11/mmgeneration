@@ -30,7 +30,7 @@ def dump_new_config(domain_A_name, domain_B_name):
                 lines[i] = new_l
                 
             if l == "dataroot = None":
-                new_l = f"""dataroot = '{home_dir / "datasets/synscapes"}'"""
+                new_l = f"""dataroot = '{home_dir / "datasets/synscapes"}/'"""
                 lines[i] = new_l
             
     cont = "\n".join(lines)
@@ -63,7 +63,7 @@ def main():
     print(f"Preparing Synscapes domain A {domain_A_name}")
     cmd = f"python tools/dataset_converters/synscapes.py /datasets/synscapes --out-dir {home_dir / 'datasets/synscapes/unchanged'} --nproc 8 --shift {args.shift} --scale {args.scale} --drop {args.drop}"
                     
-    #execute(cmd, dry_run=args.dry_run)
+    execute(cmd, dry_run=args.dry_run)
     
     
     domain_B_name = []
@@ -95,7 +95,7 @@ def main():
     cmd = f"python tools/dataset_converters/synscapes.py /datasets/synscapes --out-dir {home_dir / 'datasets/synscapes' / domain_B_name} --nproc 8 --shift {args.shift} --scale {args.scale} --drop {args.drop}"
     if args.disjoint:
         cmd += " --reverse"
-    #execute(cmd, dry_run=args.dry_run)
+    execute(cmd, dry_run=args.dry_run)
 
     
     
@@ -109,7 +109,7 @@ def main():
 
     ct = datetime.datetime.now()
     wandb_name = f"{ct.year}.{ct.month}.{ct.day}.{ct.hour}.{ct.minute}.{ct.second}"
-    cmd = f"python tools/train.py {config}"# --cfg-options"
+    cmd = f"python tools/train.py {config} --cfg-options data.workers_per_gpu=0"
     
     if not args.run_local:
         cmd += f" --work-dir {home_dir / 'results'}"

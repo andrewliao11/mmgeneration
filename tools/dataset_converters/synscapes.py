@@ -182,8 +182,9 @@ def main():
     
     translator = Translator(args.shift, args.scale, args.drop)
     
-    set_name = [('train', f'annotations/bbox_train_{args.seed}_{args.n}.json'),
-                ('val', f'annotations/bbox_val_{args.seed}_{args.n}.json')]
+    set_name = [('train', f'annotations/bbox.json'),
+                ('val', f'annotations/bbox.json'), 
+                ('test', f'annotations/bbox.json')]
 
     for split, json_name in set_name:
         print(f'Converting {split} into {json_name}')
@@ -194,7 +195,6 @@ def main():
             
             create_img_soft_links(files, out_dir / split / "rgb")
             image_infos = collect_annotations(files, translator=translator, nproc=args.nproc)
-            
             
             cvt_annotations(image_infos, out_dir / split / json_name)
 

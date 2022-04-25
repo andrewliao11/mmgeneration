@@ -12,10 +12,15 @@ from .unconditional_image_dataset import UnconditionalImageDataset
 from .unpaired_image_dataset import UnpairedImageDataset
 from .unpaired_image_bbox_dataset import UnpairedImageBboxDataset
 
+
+from .detection_datasets import DetectionUnpairedDataset, DetectionCityscapesDataset
+
+
 __all__ = [
     'build_dataloader', 'build_dataset', 'LoadImageFromFile',
     'DistributedSampler', 'UnconditionalImageDataset', 'Compose', 'ToTensor',
     'ImageToTensor', 'Collect', 'Flip', 'Resize', 'RepeatDataset', 'Normalize',
     'GrowScaleImgDataset', 'SinGANDataset', 'PairedImageDataset',
-    'UnpairedImageDataset', 'QuickTestImageDataset', 'UnpairedImageBboxDataset'
+    'UnpairedImageDataset', 'QuickTestImageDataset', 'UnpairedImageBboxDataset', 
+    'DetectionCityscapesDataset', 'DetectionUnpairedDataset'
 ]

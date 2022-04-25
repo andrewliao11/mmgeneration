@@ -39,6 +39,8 @@ def build_dataset(cfg, default_args=None):
         Object: Dataset for sampling data batch.
     """
     from .dataset_wrappers import RepeatDataset
+    from .detection_datasets import DetectionUnpairedDataset
+
     if isinstance(cfg, (list, tuple)):
         raise NotImplementedError('Currently, we do NOT support ConcatDataset')
         # dataset = ConcatDataset(
@@ -46,6 +48,10 @@ def build_dataset(cfg, default_args=None):
     if cfg['type'] == 'RepeatDataset':
         dataset = RepeatDataset(
             build_dataset(cfg['dataset'], default_args), cfg['times'])
+    elif cfg['type'] == 'DetectionUnpairedDataset':
+        dataset = DetectionUnpairedDataset(
+            build_dataset(cfg['domain_a_dataset'], default_args), 
+            build_dataset(cfg['domain_b_dataset'], default_args))
     # add support for using datasets from `MMClassification`
     elif cfg['type'].startswith('mmcls.'):
         try:
